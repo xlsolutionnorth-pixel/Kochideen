@@ -45,4 +45,3 @@ jobs:
           body: Lade unten "Kochideen.apk" auf dein Android-Handy herunter und installiere sie.
           files: Kochideen.apk
           make_latest: true
-
