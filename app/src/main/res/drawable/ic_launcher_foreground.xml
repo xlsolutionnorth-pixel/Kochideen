@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Dampf -->
+    <path android:strokeColor="#E9B44C" android:strokeWidth="3.5" android:strokeLineCap="round"
+        android:pathData="M44,30 C40,35 48,38 44,44" />
+    <path android:strokeColor="#E9B44C" android:strokeWidth="3.5" android:strokeLineCap="round"
+        android:pathData="M54,27 C50,33 58,37 54,44" />
+    <path android:strokeColor="#E9B44C" android:strokeWidth="3.5" android:strokeLineCap="round"
+        android:pathData="M64,30 C60,35 68,38 64,44" />
+    <!-- Topf -->
+    <path android:fillColor="#E0603A"
+        android:pathData="M32,50 L76,50 L73,74 Q72,80 66,80 L42,80 Q36,80 35,74 Z" />
+    <path android:fillColor="#F6F1E7"
+        android:pathData="M29,47 L79,47 Q81,47 81,49.5 Q81,52 79,52 L29,52 Q27,52 27,49.5 Q27,47 29,47 Z" />
+    <path android:strokeColor="#E0603A" android:strokeWidth="3.5" android:strokeLineCap="round"
+        android:pathData="M32,57 L25,57 M76,57 L83,57" />
+</vector>

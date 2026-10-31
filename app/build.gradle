@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'de.kochideen.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "de.kochideen.app"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Fester Schlüssel, damit spätere Versionen einfach über die alte App installiert werden können
+    signingConfigs {
+        kochideen {
+            storeFile file('kochideen.keystore')
+            storePassword 'kochideen'
+            keyAlias 'kochideen'
+            keyPassword 'kochideen'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.kochideen
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.kochideen
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}

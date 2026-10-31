@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Kochideen</title>
+<style>
+:root{
+  --green:#1F3B2D; --green-2:#2E5641; --cream:#F6F1E7; --paper:#FFFCF6;
+  --ink:#1D2420; --muted:#6B7169; --line:#E6DDCC;
+  --tomato:#E0603A; --tomato-2:#C94E2A; --saffron:#E9B44C; --leaf:#7FA36B;
+  --radius:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--cream);color:var(--ink);
+  font-family:system-ui,-apple-system,"Roboto",sans-serif;font-size:16px;line-height:1.45}
+h1,h2,h3{font-family:"Noto Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+
+/* Kopfzeile */
+header{background:var(--green);color:var(--cream);padding:18px 20px 22px;position:relative}
+header .kicker{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--saffron);font-weight:600}
+header h1{font-size:1.65rem;margin-top:2px}
+header p{margin:6px 0 0;color:#CFD8CF;font-size:.92rem}
+header .back{position:absolute;right:14px;top:16px;color:var(--cream);font-size:.9rem;
+  padding:6px 12px;border:1px solid rgba(246,241,231,.35);border-radius:999px}
+
+main{padding:16px 16px 150px;max-width:640px;margin:0 auto}
+.section{margin-top:22px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.section-title h2{font-size:1.15rem}
+.section-title .meta{font-size:.82rem;color:var(--muted)}
+.hint{font-size:.88rem;color:var(--muted);margin:4px 0 0}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border-radius:14px;
+  font-weight:600;transition:transform .08s ease, background .2s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--tomato);color:#fff}
+.btn-primary:active{background:var(--tomato-2)}
+.btn-primary[disabled]{background:#D9CFC0;color:#fff}
+.btn-dark{background:var(--green);color:var(--cream)}
+.btn-ghost{background:var(--paper);border:1.5px solid var(--line)}
+.btn-small{padding:8px 12px;font-size:.88rem;border-radius:10px}
+.link{color:var(--tomato-2);font-weight:600;font-size:.9rem;padding:4px 0}
+
+.capture{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-top:-2px}
+.capture label{cursor:pointer}
+.capture .big{flex-direction:column;padding:18px 10px;font-size:1rem}
+.capture .big .ico{font-size:1.8rem;line-height:1}
+input[type=file]{display:none}
+
+/* Fotos */
+.photos{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.photo{flex:0 0 auto;width:88px;height:88px;border-radius:14px;position:relative;overflow:hidden;
+  background:#E8E0D2 center/cover no-repeat}
+.photo .badge{position:absolute;left:6px;bottom:6px;background:rgba(31,59,45,.88);color:#fff;
+  font-size:.72rem;padding:2px 7px;border-radius:999px}
+.photo.err .badge{background:var(--tomato-2)}
+.photo .spin{position:absolute;inset:0;display:grid;place-items:center;background:rgba(31,59,45,.45)}
+.spinner{width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;
+  animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Zutaten-Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1.5px solid var(--line);
+  border-radius:999px;padding:6px 6px 6px 12px;font-size:.93rem;animation:pop .2s ease}
+.chip .x{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--muted);
+  background:#F0E9DC;font-size:.9rem}
+.chip.spice{padding:6px 12px;background:transparent;border-style:dashed;color:var(--muted)}
+.chip.basis{border-color:var(--leaf)}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.empty{border:1.5px dashed var(--line);border-radius:var(--radius);padding:22px;text-align:center;color:var(--muted);font-size:.93rem}
+
+.add-row{display:flex;gap:8px;margin-top:12px}
+.field{flex:1;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;width:100%}
+.field:focus{border-color:var(--green-2)}
+
+/* Basis-Zutaten */
+.grid-check{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check{display:flex;align-items:center;gap:10px;background:var(--paper);border:1.5px solid var(--line);
+  border-radius:12px;padding:11px 12px;font-size:.95rem;user-select:none}
+.check .box{width:22px;height:22px;border-radius:7px;border:2px solid #C9BDA8;display:grid;place-items:center;
+  flex:0 0 auto;color:#fff;font-size:.8rem;transition:all .15s}
+.check.on{border-color:var(--green-2);background:#EEF3EC}
+.check.on .box{background:var(--green-2);border-color:var(--green-2)}
+
+.card{background:var(--paper);border:1.5px solid var(--line);border-radius:var(--radius);padding:16px}
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+.opt-row + .opt-row{border-top:1px solid var(--line)}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:34px;height:34px;border-radius:10px;background:#F0E9DC;font-size:1.1rem;font-weight:700}
+.stepper span{min-width:28px;text-align:center;font-weight:700}
+.seg{display:flex;background:#F0E9DC;border-radius:10px;padding:3px}
+.seg button{padding:6px 12px;border-radius:8px;font-weight:600;font-size:.9rem;color:var(--muted)}
+.seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* Rezeptkarten */
+.recipe{display:block;width:100%;text-align:left;background:var(--paper);border:1.5px solid var(--line);
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;animation:pop .25s ease}
+.recipe .top{display:flex;gap:12px;align-items:flex-start}
+.recipe .emo{font-size:2rem;width:52px;height:52px;border-radius:14px;background:#F3ECDF;display:grid;place-items:center;flex:0 0 auto}
+.recipe h3{font-size:1.1rem;line-height:1.25}
+.recipe .art{font-size:.78rem;color:var(--tomato-2);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.recipe p{margin:8px 0 0;font-size:.92rem;color:#454B45}
+.facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.fact{font-size:.8rem;background:#F3ECDF;border-radius:8px;padding:4px 8px;font-weight:600;color:#4A4F48}
+.fact.warn{background:#FCE6DD;color:var(--tomato-2)}
+.recipe .heart{position:absolute;right:14px;top:14px;font-size:1.2rem}
+
+/* Detail */
+.hero{background:var(--green);color:var(--cream);margin:-16px -16px 0;padding:6px 20px 24px}
+.hero .emo{font-size:2.6rem}
+.hero h2{font-size:1.55rem;line-height:1.2;margin-top:4px}
+.hero p{color:#CFD8CF;margin:8px 0 0;font-size:.95rem}
+.hero .facts .fact{background:rgba(246,241,231,.12);color:var(--cream)}
+.times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.time{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.time b{display:block;font-size:1.25rem;font-family:"Noto Serif",Georgia,serif}
+.time span{font-size:.75rem;color:var(--muted)}
+.nutri{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nutri .n{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:10px}
+.nutri .n.main{grid-column:span 3;display:flex;align-items:center;justify-content:space-between;background:#FFF3E9;border-color:#F3D5C2}
+.nutri .n b{font-size:1.15rem;font-family:"Noto Serif",Georgia,serif;display:block}
+.nutri .n.main b{font-size:1.7rem;color:var(--tomato-2)}
+.nutri .n span{font-size:.76rem;color:var(--muted)}
+.macro{display:flex;height:10px;border-radius:999px;overflow:hidden;margin-top:10px;background:#EEE}
+.macro i{display:block;height:100%}
+.legend{display:flex;gap:14px;margin-top:6px;font-size:.76rem;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.ing-list{list-style:none;margin:0;padding:0}
+.ing-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.ing-list li:last-child{border-bottom:0}
+.ing-list .amt{color:var(--muted);font-size:.9rem;white-space:nowrap}
+.tag{font-size:.7rem;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:1px}
+.tag.gewuerz{background:#EFE7D6;color:#8A6D2F}
+.tag.fehlt{background:#FCE6DD;color:var(--tomato-2)}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;position:relative;padding:0 0 16px 44px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-2px;width:30px;height:30px;border-radius:50%;
+  background:var(--green);color:var(--cream);display:grid;place-items:center;font-weight:700;font-size:.9rem}
+.tip{background:#FFF7E2;border:1.5px solid #F1DFAE;border-radius:14px;padding:12px 14px;font-size:.93rem}
+
+/* Laden */
+.loading{text-align:center;padding:50px 20px}
+.pot{font-size:3.4rem;animation:bob 1.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+.loading h3{margin-top:12px;font-size:1.2rem}
+.loading p{color:var(--muted);font-size:.92rem}
+
+/* Aktionsleiste unten */
+.actionbar{position:fixed;left:0;right:0;bottom:64px;padding:12px 16px;
+  background:linear-gradient(to top, var(--cream) 70%, rgba(246,241,231,0));z-index:5}
+.actionbar .inner{max-width:640px;margin:0 auto;display:flex;gap:10px}
+.actionbar .btn{flex:1}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;height:64px;background:var(--paper);border-top:1px solid var(--line);
+  display:flex;z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:.74rem;color:var(--muted);font-weight:600}
+nav.tabs button .i{font-size:1.25rem;filter:grayscale(1);opacity:.6}
+nav.tabs button.on{color:var(--green)}
+nav.tabs button.on .i{filter:none;opacity:1}
+nav.tabs .count{background:var(--tomato);color:#fff;border-radius:999px;font-size:.65rem;padding:0 5px;margin-left:2px}
+
+.toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+  padding:10px 16px;border-radius:12px;font-size:.9rem;opacity:0;transition:all .25s;z-index:20;max-width:88%;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.notice{background:#FFF3E9;border:1.5px solid #F3D5C2;border-radius:14px;padding:12px 14px;font-size:.9rem;margin-top:14px}
+.err-box{background:#FCE6DD;border:1.5px solid #F0B9A4;border-radius:14px;padding:14px;font-size:.92rem;color:#7A2E17}
+label.lbl{font-weight:600;font-size:.9rem;display:block;margin-bottom:6px}
+.radio{display:flex;align-items:flex-start;gap:10px;padding:10px 0}
+.radio input{margin-top:4px;accent-color:var(--green)}
+.radio small{display:block;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav class="tabs" id="tabs"></nav>
+<div class="toast" id="toast"></div>
+
+<input type="file" id="camInput" accept="image/*" capture="environment">
+<input type="file" id="galInput" accept="image/*" multiple>
+
+<script>
+"use strict";
+/* ---------- Grundlagen ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+
+/* Gewürze werden als vorhanden angenommen */
+const SPICES = ["Salz","Pfeffer","Paprikapulver","Chiliflocken","Currypulver","Kreuzkümmel","Oregano",
+  "Basilikum (getrocknet)","Thymian","Rosmarin","Petersilie (getrocknet)","Muskatnuss","Zimt","Lorbeerblatt","Knoblauchpulver","Zucker (zum Würzen)"];
+
+/* Häufige Basis-Zutaten, nach denen gefragt wird */
+const STAPLES = [
+  ["Eier","🥚"],["Butter","🧈"],["Milch","🥛"],["Sahne","🥛"],["Mehl","🌾"],["Zucker","🍬"],
+  ["Speiseöl","🫒"],["Olivenöl","🫒"],["Zwiebeln","🧅"],["Knoblauch","🧄"],["Nudeln","🍝"],["Reis","🍚"],
+  ["Kartoffeln","🥔"],["Reibekäse","🧀"],["Tomatenmark","🍅"],["Dosentomaten","🥫"],["Gemüsebrühe","🥣"],
+  ["Senf","🟡"],["Essig","🍶"],["Zitrone","🍋"],["Honig","🍯"],["Semmelbrösel","🍞"],["Joghurt","🥛"],["Toastbrot","🍞"]
+];
+
+const CAT_EMOJI = {gemuese:"🥕",obst:"🍎",fleisch:"🥩",fisch:"🐟",milch:"🥛",kaese:"🧀",ei:"🥚",getreide:"🌾",
+  huelsenfruechte:"🫘",konserve:"🥫",gewuerz:"🧂",sauce:"🫙",nuss:"🥜",backen:"🧁",getraenk:"🧃",kraeuter:"🌿",sonstiges:"🍽️",basis:"✔️"};
+
+const MODELS = [
+  ["claude-sonnet-5-5","Claude Sonnet 5.5","Empfohlen – gute Erkennung, ausgewogene Kosten"],
+  ["claude-haiku-5-5","Claude Haiku 5.5","Am schnellsten und günstigsten"],
+  ["claude-opus-5-5","Claude Opus 5.5","Beste Qualität, teurer und langsamer"]
+];
+
+/* ---------- Zustand ---------- */
+const S = {
+  view: "scan",
+  tab: "cook",
+  history: [],
+  ingredients: store.get("ingredients", []),          // {id,name,cat,src}
+  photos: [],                                           // {id,thumb,status,found,added,error}
+  staples: new Set(store.get("staples", [])),
+  recipes: store.get("lastRecipes", []),
+  saved: store.get("saved", []),
+  settings: Object.assign({apiKey:"", model:"claude-sonnet-5-5", servings:2, count:4, wish:""}, store.get("settings", {})),
+  current: null,
+  loading: false,
+  error: ""
+};
+const persist = () => {
+  store.set("ingredients", S.ingredients);
+  store.set("staples", [...S.staples]);
+  store.set("lastRecipes", S.recipes);
+  store.set("saved", S.saved);
+  store.set("settings", S.settings);
+};
+
+let toastT;
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+/* ---------- Navigation ---------- */
+function go(view, push = true){
+  if (push && S.view !== view) S.history.push(S.view);
+  S.view = view; render(); window.scrollTo(0, 0);
+}
+function tab(view, t){ S.history = []; S.view = view; S.tab = t || ({scan:"cook",staples:"cook",results:"ideas",saved:"saved",settings:"settings"}[view]) || S.tab; render(); window.scrollTo(0, 0); }
+window.handleBack = function(){
+  if (S.history.length){ S.view = S.history.pop(); render(); window.scrollTo(0,0); return true; }
+  if (S.view !== "scan"){ S.view = "scan"; S.tab = "cook"; render(); return true; }
+  return false;
+};
+
+/* ---------- Claude-API ---------- */
+const pending = {};
+window.__nativeResp = function(id, status, b64){
+  const p = pending[id]; if (!p) return; delete pending[id];
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  p.resolve({status, text: new TextDecoder("utf-8").decode(bytes)});
+};
+
+async function rawRequest(body){
+  const key = S.settings.apiKey.trim();
+  if (window.Android && window.Android.request){
+    const id = uid();
+    return new Promise(resolve => { pending[id] = {resolve}; window.Android.request(id, JSON.stringify(body), key); });
+  }
+  // Fallback für Test im Browser
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {method:"POST",
+      headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"}, body: JSON.stringify(body)});
+    return {status: r.status, text: await r.text()};
+  } catch(e){ return {status:0, text: JSON.stringify({error:{message:"Keine Verbindung: " + e.message}})}; }
+}
+
+async function askClaude(content, maxTokens){
+  if (!S.settings.apiKey.trim()) throw new Error("Bitte zuerst in den Einstellungen deinen API-Schlüssel eintragen.");
+  const res = await rawRequest({model: S.settings.model, max_tokens: maxTokens, messages:[{role:"user", content}]});
+  let data; try { data = JSON.parse(res.text); } catch(e){ data = null; }
+  if (res.status !== 200){
+    const msg = data && data.error && data.error.message ? data.error.message : ("Fehler " + res.status);
+    if (res.status === 401) throw new Error("API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.");
+    if (res.status === 429) throw new Error("Zu viele Anfragen – bitte kurz warten. (" + msg + ")");
+    if (res.status === 529) throw new Error("Der Dienst ist gerade überlastet. Bitte gleich nochmal versuchen.");
+    throw new Error(msg);
+  }
+  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+  return parseJSON(text);
+}
+
+function parseJSON(text){
+  let t = text.replace(/```json|```/g, "");
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a < 0 || b < 0) throw new Error("Unerwartete Antwort erhalten. Bitte nochmal versuchen.");
+  try { return JSON.parse(t.slice(a, b + 1)); }
+  catch(e){ throw new Error("Antwort konnte nicht gelesen werden. Bitte nochmal versuchen."); }
+}
+
+const isDemo = () => S.settings.apiKey.trim().toLowerCase() === "demo";
+
+/* ---------- Fotos ---------- */
+function resizeImage(file, max){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      const full = c.toDataURL("image/jpeg", 0.82);
+      const ts = 180 / Math.max(w, h);
+      const c2 = document.createElement("canvas"); c2.width = Math.round(w*ts); c2.height = Math.round(h*ts);
+      c2.getContext("2d").drawImage(c, 0, 0, c2.width, c2.height);
+      URL.revokeObjectURL(url);
+      resolve({full, thumb: c2.toDataURL("image/jpeg", 0.7)});
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Foto konnte nicht geladen werden")); };
+    img.src = url;
+  });
+}
+
+const DETECT_PROMPT = `Du siehst ein Foto aus einer Küche (z. B. Kühlschrank, Vorratsschrank, Arbeitsfläche oder einzelne Lebensmittel).
+Liste ALLE erkennbaren Lebensmittel und Kochzutaten auf.
+Regeln:
+- Deutsche, kurze, allgemeine Namen im Singular oder üblicher Form (z. B. "Paprika rot", "Hähnchenbrust", "Gouda", "Champignons").
+- Keine Marken, keine Mengen, keine Geräte, kein Geschirr.
+- Bei Verpackungen den Inhalt nennen, wenn er eindeutig erkennbar ist.
+- Nur nennen, was du wirklich siehst – nichts raten.
+Antworte AUSSCHLIESSLICH mit JSON in genau diesem Format:
+{"zutaten":[{"name":"...","kategorie":"gemuese|obst|fleisch|fisch|milch|kaese|ei|getreide|huelsenfruechte|konserve|gewuerz|kraeuter|sauce|nuss|backen|getraenk|sonstiges"}]}
+Wenn nichts erkennbar ist: {"zutaten":[]}`;
+
+async function detectIngredients(dataUrl){
+  if (isDemo()){
+    await new Promise(r => setTimeout(r, 1200));
+    const pool = [["Tomaten","gemuese"],["Zucchini","gemuese"],["Paprika rot","gemuese"],["Hähnchenbrust","fleisch"],
+      ["Feta","kaese"],["Spinat","gemuese"],["Champignons","gemuese"],["Mozzarella","kaese"],["Kichererbsen","huelsenfruechte"],["Frühlingszwiebeln","gemuese"]];
+    return pool.sort(() => Math.random() - .5).slice(0, 4).map(([name, kategorie]) => ({name, kategorie}));
+  }
+  const data = dataUrl.split(",")[1];
+  const r = await askClaude([
+    {type:"image", source:{type:"base64", media_type:"image/jpeg", data}},
+    {type:"text", text: DETECT_PROMPT}
+  ], 1500);
+  return Array.isArray(r.zutaten) ? r.zutaten.filter(z => z && z.name) : [];
+}
+
+function hasIngredient(name){
+  const n = norm(name);
+  return S.ingredients.some(i => norm(i.name) === n);
+}
+function addIngredient(name, cat, src){
+  name = String(name).trim(); if (!name || hasIngredient(name)) return false;
+  S.ingredients.push({id: uid(), name: name.charAt(0).toUpperCase() + name.slice(1), cat: cat || "sonstiges", src});
+  return true;
+}
+
+async function handleFiles(files){
+  files = [...files].filter(f => f.type.startsWith("image/") || !f.type);
+  for (const f of files) processPhoto(f);
+}
+async function processPhoto(file){
+  const p = {id: uid(), thumb: "", status: "loading"};
+  S.photos.push(p); updateScan();
+  try {
+    const {full, thumb} = await resizeImage(file, 1280);
+    p.thumb = thumb; updateScan();
+    const found = await detectIngredients(full);
+    let added = 0;
+    for (const z of found) if (addIngredient(z.name, z.kategorie, "foto")) added++;
+    p.status = "done"; p.found = found.length; p.added = added;
+    persist();
+    toast(found.length ? `${found.length} Zutat${found.length === 1 ? "" : "en"} erkannt` : "Auf diesem Foto wurde nichts erkannt");
+  } catch(e){
+    p.status = "error"; p.error = e.message; toast(e.message);
+  }
+  updateScan();
+}
+
+/* ---------- Ansichten ---------- */
+function header(kicker, title, sub, back){
+  return `<header><div class="kicker">${esc(kicker)}</div><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}
+    ${back ? `<button class="back" onclick="handleBack()">‹ Zurück</button>` : ""}</header>`;
+}
+
+function viewScan(){
+  return header("Schritt 1 von 3", "Was hast du da?", "Fotografiere deinen Kühlschrank, Vorrat oder einzelne Zutaten – so oft du willst.") +
+  `<main>
+    <div class="section capture">
+      <label for="camInput" class="btn btn-primary big"><span class="ico">📷</span>Foto aufnehmen</label>
+      <label for="galInput" class="btn btn-ghost big"><span class="ico">🖼️</span>Aus Galerie</label>
+    </div>
+    <div class="section" id="photoSec"></div>
+    <div class="section">
+      <div class="section-title"><h2>Deine Zutaten</h2><span class="meta" id="ingCount"></span></div>
+      <div id="ingList"></div>
+      <div class="add-row">
+        <input class="field" id="manual" placeholder="Zutat selbst hinzufügen …" enterkeyhint="done">
+        <button class="btn btn-dark btn-small" onclick="addManual()">+</button>
+      </div>
+      <p class="hint">Fehlt etwas oder wurde falsch erkannt? Einfach antippen zum Entfernen oder selbst ergänzen.</p>
+    </div>
+    ${!S.settings.apiKey ? `<div class="notice">🔑 Für die Fotoerkennung brauchst du einen API-Schlüssel. <button class="link" onclick="tab('settings')">Jetzt eintragen</button></div>` : ""}
+  </main>
+  <div class="actionbar"><div class="inner">
+    <button class="btn btn-primary" id="finishBtn" onclick="finishScan()">Einlesen beenden →</button>
+  </div></div>`;
+}
+
+function updateScan(){
+  if (S.view !== "scan") return;
+  const ps = $("#photoSec");
+  if (ps) ps.innerHTML = S.photos.length ? `<div class="section-title"><h2>Fotos</h2><span class="meta">${S.photos.length}</span></div>
+    <div class="photos">${S.photos.map(p => `
+      <div class="photo ${p.status === "error" ? "err" : ""}" style="background-image:url('${p.thumb}')">
+        ${p.status === "loading" ? `<div class="spin"><div class="spinner"></div></div>` : ""}
+        ${p.status === "done" ? `<span class="badge">+${p.added}</span>` : ""}
+        ${p.status === "error" ? `<span class="badge">Fehler</span>` : ""}
+      </div>`).join("")}</div>` : "";
+  const il = $("#ingList");
+  if (il) il.innerHTML = S.ingredients.length
+    ? `<div class="chips">${S.ingredients.map(i => `
+        <span class="chip ${i.src === "basis" ? "basis" : ""}">${CAT_EMOJI[i.cat] || "🍽️"} ${esc(i.name)}
+        <button class="x" aria-label="entfernen" onclick="removeIng('${i.id}')">✕</button></span>`).join("")}</div>
+      <p style="margin:10px 0 0"><button class="link" onclick="clearAll()">Alles zurücksetzen</button></p>`
+    : `<div class="empty">Noch keine Zutaten.<br>Mach ein Foto oder füge sie von Hand hinzu.</div>`;
+  const c = $("#ingCount"); if (c) c.textContent = S.ingredients.length ? S.ingredients.length + " Stück" : "";
+  const busy = S.photos.some(p => p.status === "loading");
+  const fb = $("#finishBtn");
+  if (fb){
+    fb.disabled = busy || !S.ingredients.length;
+    fb.textContent = busy ? "Fotos werden ausgewertet …" : "Einlesen beenden →";
+  }
+}
+
+window.removeIng = id => { S.ingredients = S.ingredients.filter(i => i.id !== id); persist(); updateScan(); };
+window.addManual = () => {
+  const f = $("#manual"); const v = f.value.trim(); if (!v) return;
+  v.split(",").forEach(x => addIngredient(x, "sonstiges", "manuell"));
+  f.value = ""; persist(); updateScan(); f.focus();
+};
+window.clearAll = () => {
+  if (!confirm("Alle Zutaten und Fotos entfernen?")) return;
+  S.ingredients = []; S.photos = []; S.staples = new Set(); persist(); updateScan();
+};
+window.finishScan = () => { if (S.ingredients.length) go("staples"); };
+
+function availableStaples(){
+  return STAPLES.filter(([n]) => !S.ingredients.some(i => norm(i.name).includes(norm(n)) || norm(n).includes(norm(i.name))));
+}
+
+function viewStaples(){
+  const st = availableStaples();
+  const s = S.settings;
+  return header("Schritt 2 von 3", "Hast du auch noch …?", "Diese Zutaten sind oft in der Küche, wurden aber nicht fotografiert. Tippe an, was du hast.", true) +
+  `<main>
+    <div class="section">
+      <div class="section-title"><h2>Häufige Zutaten</h2><button class="link" onclick="toggleAllStaples()">${st.every(([n]) => S.staples.has(n)) ? "Keine" : "Alle"} auswählen</button></div>
+      <div class="grid-check">${st.map(([n, e]) => `
+        <button class="check ${S.staples.has(n) ? "on" : ""}" onclick="toggleStaple(this, '${esc(n)}')">
+          <span class="box">✓</span><span>${e} ${esc(n)}</span></button>`).join("")}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Gewürze</h2><span class="meta">als vorhanden angenommen</span></div>
+      <div class="chips">${SPICES.map(x => `<span class="chip spice">🧂 ${esc(x)}</span>`).join("")}</div>
+      <p class="hint">Gewürze werden in den Rezepten verwendet und in der Zutatenliste aufgeführt.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Wünsche</h2></div>
+      <div class="card">
+        <div class="opt-row"><span>Portionen</span>
+          <div class="stepper"><button onclick="setServ(-1)">−</button><span id="serv">${s.servings}</span><button onclick="setServ(1)">+</button></div></div>
+        <div class="opt-row"><span>Anzahl Ideen</span>
+          <div class="seg">${[3,4,6].map(n => `<button class="${s.count === n ? "on" : ""}" onclick="setCount(${n})">${n}</button>`).join("")}</div></div>
+        <div style="padding-top:10px">
+          <input class="field" id="wish" value="${esc(s.wish)}" placeholder="z. B. vegetarisch, schnell, ohne Ofen …" oninput="S.settings.wish=this.value;persist()">
+        </div>
+      </div>
+    </div>
+  </main>
+  <div class="actionbar"><div class="inner">
+    <button class="btn btn-primary" onclick="generate(false)">✨ Kochideen erstellen</button>
+  </div></div>`;
+}
+window.toggleStaple = (el, n) => {
+  S.staples.has(n) ? S.staples.delete(n) : S.staples.add(n);
+  el.classList.toggle("on"); persist();
+};
+window.toggleAllStaples = () => {
+  const st = availableStaples().map(([n]) => n);
+  const all = st.every(n => S.staples.has(n));
+  st.forEach(n => all ? S.staples.delete(n) : S.staples.add(n));
+  persist(); render();
+};
+window.setServ = d => { S.settings.servings = Math.max(1, Math.min(8, S.settings.servings + d)); $("#serv").textContent = S.settings.servings; persist(); };
+window.setCount = n => { S.settings.count = n; persist(); render(); };
+
+/* ---------- Rezepte erzeugen ---------- */
+function recipePrompt(more){
+  const s = S.settings;
+  const staples = availableStaples().map(([n]) => n).filter(n => S.staples.has(n));
+  const list = [...S.ingredients.map(i => i.name), ...staples];
+  const avoid = more ? S.recipes.map(r => r.titel) : [];
+  return `Du bist ein kreativer, praxisnaher Hobbykoch-Coach. Erstelle ${s.count} unterschiedliche Rezeptideen auf Deutsch.
+
+VERFÜGBARE ZUTATEN:
+${list.map(x => "- " + x).join("\n")}
+
+GEWÜRZE & GETROCKNETE KRÄUTER (immer vorhanden): ${SPICES.join(", ")}
+Außerdem immer vorhanden: Wasser.
+
+PORTIONEN: ${s.servings}
+${s.wish.trim() ? "WÜNSCHE: " + s.wish.trim() : ""}
+${avoid.length ? "Diese Gerichte wurden schon vorgeschlagen, bitte NICHT wiederholen: " + avoid.join("; ") : ""}
+
+REGELN:
+- Verwende hauptsächlich die verfügbaren Zutaten. Nicht jede Zutat muss in jedem Rezept vorkommen.
+- Pro Rezept darf höchstens EINE kleine, nicht vorhandene Zutat vorkommen (typ "fehlt"). Besser gar keine.
+- Verwendete Gewürze/Kräuter MÜSSEN in der Zutatenliste stehen (mit Menge, z. B. "1 TL", "1 Prise"), typ "gewuerz".
+- Alle anderen verwendeten Zutaten: typ "vorhanden". Mengen für ${s.servings} Portion(en).
+- Abwechslung bei der Art (z. B. Pfanne, Ofen, Suppe, Salat, Pasta, Bowl, Frühstück, Snack) – passend zu den Zutaten.
+- Klare, nummerierbare Schritte, jeder Schritt ein bis zwei Sätze.
+- Nährwerte PRO PORTION realistisch schätzen (ganze Zahlen). Zeiten realistisch in Minuten.
+
+Antworte AUSSCHLIESSLICH mit gültigem JSON ohne Markdown, genau in diesem Format:
+{"rezepte":[{"titel":"","beschreibung":"1–2 appetitliche Sätze","art":"z. B. Pfannengericht","emoji":"ein passendes Emoji","schwierigkeit":"leicht|mittel|anspruchsvoll","zeit":{"vorbereitung":10,"kochen":20,"gesamt":30},"portionen":${s.servings},"naehrwerte_pro_portion":{"kcal":0,"eiweiss_g":0,"kohlenhydrate_g":0,"zucker_g":0,"fett_g":0,"gesaettigte_fettsaeuren_g":0,"ballaststoffe_g":0},"zutaten":[{"name":"","menge":"","typ":"vorhanden|gewuerz|fehlt"}],"schritte":[""],"tipp":"ein kurzer Profi-Tipp"}]}`;
+}
+
+function demoRecipes(){
+  const s = S.settings.servings;
+  const base = [
+    {titel:"Mediterrane Hähnchenpfanne", art:"Pfannengericht", emoji:"🍳", beschreibung:"Saftige Hähnchenstreifen mit Zucchini, Paprika und Tomaten, abgerundet mit Feta und Oregano.",
+     schwierigkeit:"leicht", zeit:{vorbereitung:10, kochen:20, gesamt:30}, portionen:s,
+     naehrwerte_pro_portion:{kcal:480, eiweiss_g:42, kohlenhydrate_g:14, zucker_g:9, fett_g:27, gesaettigte_fettsaeuren_g:10, ballaststoffe_g:4},
+     zutaten:[{name:"Hähnchenbrust",menge:"300 g",typ:"vorhanden"},{name:"Zucchini",menge:"1",typ:"vorhanden"},{name:"Paprika rot",menge:"1",typ:"vorhanden"},
+       {name:"Tomaten",menge:"2",typ:"vorhanden"},{name:"Feta",menge:"100 g",typ:"vorhanden"},{name:"Olivenöl",menge:"2 EL",typ:"vorhanden"},
+       {name:"Oregano",menge:"1 TL",typ:"gewuerz"},{name:"Salz",menge:"1 Prise",typ:"gewuerz"},{name:"Pfeffer",menge:"1 Prise",typ:"gewuerz"}],
+     schritte:["Hähnchen in Streifen schneiden, mit Salz und Pfeffer würzen.","Gemüse in mundgerechte Stücke schneiden.","Hähnchen in Olivenöl 5–6 Minuten scharf anbraten, herausnehmen.","Zucchini und Paprika 5 Minuten braten, Tomaten zugeben.","Hähnchen zurück in die Pfanne geben, mit Oregano würzen und Feta darüberbröseln."],
+     tipp:"Ein Spritzer Zitrone zum Schluss macht das Gericht frischer."},
+    {titel:"Spinat-Champignon-Omelett", art:"Frühstück", emoji:"🥚", beschreibung:"Fluffiges Omelett mit gebratenen Champignons und frischem Spinat.",
+     schwierigkeit:"leicht", zeit:{vorbereitung:5, kochen:10, gesamt:15}, portionen:s,
+     naehrwerte_pro_portion:{kcal:320, eiweiss_g:21, kohlenhydrate_g:4, zucker_g:2, fett_g:24, gesaettigte_fettsaeuren_g:9, ballaststoffe_g:2},
+     zutaten:[{name:"Eier",menge:"4",typ:"vorhanden"},{name:"Spinat",menge:"100 g",typ:"vorhanden"},{name:"Champignons",menge:"150 g",typ:"vorhanden"},
+       {name:"Butter",menge:"1 EL",typ:"vorhanden"},{name:"Schnittlauch",menge:"etwas",typ:"fehlt"},{name:"Muskatnuss",menge:"1 Prise",typ:"gewuerz"},{name:"Salz",menge:"1 Prise",typ:"gewuerz"}],
+     schritte:["Champignons in Scheiben schneiden und in Butter goldbraun braten.","Spinat zugeben und zusammenfallen lassen.","Eier mit Salz und Muskat verquirlen und darübergießen.","Bei mittlerer Hitze stocken lassen, zusammenklappen und servieren."],
+     tipp:"Deckel auflegen – dann gart die Oberseite schneller."}
+  ];
+  return base;
+}
+
+window.generate = async function(more){
+  S.loading = true; S.error = "";
+  if (!more) S.recipes = [];
+  S.tab = "ideas";
+  go("results", S.view !== "results");
+  try {
+    let list;
+    if (isDemo()){ await new Promise(r => setTimeout(r, 1800)); list = demoRecipes(); }
+    else {
+      const r = await askClaude(recipePrompt(more), Math.min(16000, 1800 * S.settings.count + 1500));
+      list = Array.isArray(r.rezepte) ? r.rezepte : [];
+    }
+    list.forEach(x => x.id = uid());
+    if (!list.length) throw new Error("Es kamen keine Rezepte zurück. Bitte nochmal versuchen.");
+    S.recipes = more ? [...S.recipes, ...list] : list;
+  } catch(e){ S.error = e.message; }
+  S.loading = false; persist();
+  if (S.view === "results") render();
+};
+
+const isSaved = id => S.saved.some(r => r.id === id);
+function facts(r){
+  const n = r.naehrwerte_pro_portion || {};
+  const missing = (r.zutaten || []).filter(z => z.typ === "fehlt").length;
+  return `<div class="facts">
+    <span class="fact">⏱ ${num(r.zeit && r.zeit.gesamt)} Min</span>
+    <span class="fact">🔥 ca. ${num(n.kcal)} kcal</span>
+    <span class="fact">💧 ${num(n.fett_g)} g Fett</span>
+    ${r.schwierigkeit ? `<span class="fact">${diffIcon(r.schwierigkeit)} ${esc(r.schwierigkeit)}</span>` : ""}
+    ${missing ? `<span class="fact warn">+${missing} fehlt</span>` : ""}
+  </div>`;
+}
+const num = v => (v === undefined || v === null || v === "") ? "–" : Math.round(Number(v)) || esc(v);
+const diffIcon = d => d === "leicht" ? "🟢" : d === "mittel" ? "🟡" : "🔴";
+
+function recipeCard(r, from){
+  return `<button class="recipe" onclick="openRecipe('${r.id}','${from}')">
+    <span class="heart">${isSaved(r.id) ? "❤️" : ""}</span>
+    <div class="top"><div class="emo">${esc(r.emoji || "🍽️")}</div>
+      <div><div class="art">${esc(r.art || "")}</div><h3>${esc(r.titel)}</h3></div></div>
+    <p>${esc(r.beschreibung || "")}</p>${facts(r)}</button>`;
+}
+
+function viewResults(){
+  let body;
+  if (S.loading && !S.recipes.length){
+    body = `<div class="loading"><div class="pot">🍲</div><h3>Ideen werden gekocht …</h3>
+      <p>Das dauert meist 20–60 Sekunden.</p></div>`;
+  } else {
+    body = (S.error ? `<div class="err-box" style="margin-top:16px">⚠️ ${esc(S.error)}<br><br>
+        <button class="btn btn-dark btn-small" onclick="generate(false)">Nochmal versuchen</button></div>` : "") +
+      `<div class="section">${S.recipes.map(r => recipeCard(r, "results")).join("")}</div>` +
+      (S.loading ? `<div class="loading" style="padding:20px"><div class="pot">🍲</div><p>Weitere Ideen werden gekocht …</p></div>` : "");
+  }
+  return header("Schritt 3 von 3", "Deine Kochideen", `${S.ingredients.length} Zutaten · ${S.settings.servings} Portion${S.settings.servings > 1 ? "en" : ""}`, true) +
+    `<main>${body}</main>` +
+    (!S.loading && S.recipes.length ? `<div class="actionbar"><div class="inner">
+      <button class="btn btn-ghost" onclick="restart()">Neu starten</button>
+      <button class="btn btn-dark" onclick="generate(true)">＋ Mehr Ideen</button></div></div>` : "");
+}
+window.restart = () => {
+  if (!confirm("Neu starten? Deine Zutatenliste wird geleert (gespeicherte Rezepte bleiben).")) return;
+  S.ingredients = []; S.photos = []; S.staples = new Set(); S.recipes = []; persist(); tab("scan");
+};
+
+window.openRecipe = (id, from) => {
+  S.current = S.recipes.find(r => r.id === id) || S.saved.find(r => r.id === id);
+  if (S.current) go("detail");
+};
+
+function viewDetail(){
+  const r = S.current; if (!r) return viewScan();
+  const n = r.naehrwerte_pro_portion || {}, z = r.zeit || {};
+  const p = Number(n.eiweiss_g) * 4 || 0, k = Number(n.kohlenhydrate_g) * 4 || 0, f = Number(n.fett_g) * 9 || 0, sum = p + k + f || 1;
+  const ings = r.zutaten || [];
+  const order = {vorhanden:0, fehlt:1, gewuerz:2};
+  return `<header style="padding-bottom:4px"><button class="back" onclick="handleBack()">‹ Zurück</button><div class="kicker">${esc(r.art || "Rezept")}</div></header>
+  <main>
+    <div class="hero">
+      <div class="emo">${esc(r.emoji || "🍽️")}</div>
+      <h2>${esc(r.titel)}</h2>
+      <p>${esc(r.beschreibung || "")}</p>
+      ${facts(r)}
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Zubereitungszeit</h2><span class="meta">ca.</span></div>
+      <div class="times">
+        <div class="time"><b>${num(z.vorbereitung)}</b><span>Min Vorbereitung</span></div>
+        <div class="time"><b>${num(z.kochen)}</b><span>Min Kochen</span></div>
+        <div class="time"><b>${num(z.gesamt)}</b><span>Min gesamt</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Nährwerte</h2><span class="meta">ca. pro Portion</span></div>
+      <div class="nutri">
+        <div class="n main"><div><span>Energie</span><b>${num(n.kcal)} kcal</b></div><span>${num(Math.round((Number(n.kcal)||0)*4.184))} kJ</span></div>
+        <div class="n"><b>${num(n.eiweiss_g)} g</b><span>Eiweiß</span></div>
+        <div class="n"><b>${num(n.kohlenhydrate_g)} g</b><span>Kohlenhydrate</span></div>
+        <div class="n"><b>${num(n.fett_g)} g</b><span>Fett</span></div>
+        <div class="n"><b>${num(n.zucker_g)} g</b><span>davon Zucker</span></div>
+        <div class="n"><b>${num(n.gesaettigte_fettsaeuren_g)} g</b><span>ges. Fettsäuren</span></div>
+        <div class="n"><b>${num(n.ballaststoffe_g)} g</b><span>Ballaststoffe</span></div>
+      </div>
+      <div class="macro"><i style="width:${p/sum*100}%;background:var(--leaf)"></i><i style="width:${k/sum*100}%;background:var(--saffron)"></i><i style="width:${f/sum*100}%;background:var(--tomato)"></i></div>
+      <div class="legend"><span><i style="background:var(--leaf)"></i>Eiweiß ${Math.round(p/sum*100)}%</span><span><i style="background:var(--saffron)"></i>KH ${Math.round(k/sum*100)}%</span><span><i style="background:var(--tomato)"></i>Fett ${Math.round(f/sum*100)}%</span></div>
+      <p class="hint">Geschätzte Werte – können je nach Produkt abweichen.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Zutaten</h2><span class="meta">für ${esc(r.portionen || S.settings.servings)} Portion(en)</span></div>
+      <div class="card" style="padding:4px 14px"><ul class="ing-list">
+        ${[...ings].sort((a,b) => (order[a.typ] ?? 0) - (order[b.typ] ?? 0)).map(i => `<li><span>${esc(i.name)}${
+          i.typ === "gewuerz" ? `<span class="tag gewuerz">Gewürz</span>` : i.typ === "fehlt" ? `<span class="tag fehlt">fehlt</span>` : ""
+        }</span><span class="amt">${esc(i.menge || "")}</span></li>`).join("")}
+      </ul></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Zubereitung</h2></div>
+      <ol class="steps">${(r.schritte || []).map(s => `<li>${esc(s)}</li>`).join("")}</ol>
+    </div>
+
+    ${r.tipp ? `<div class="section tip">💡 <b>Tipp:</b> ${esc(r.tipp)}</div>` : ""}
+  </main>
+  <div class="actionbar"><div class="inner">
+    <button class="btn ${isSaved(r.id) ? "btn-ghost" : "btn-primary"}" onclick="toggleSave()">${isSaved(r.id) ? "❤️ Gespeichert – entfernen" : "🤍 Rezept speichern"}</button>
+  </div></div>`;
+}
+window.toggleSave = () => {
+  const r = S.current; if (!r) return;
+  if (isSaved(r.id)){ S.saved = S.saved.filter(x => x.id !== r.id); toast("Aus deinen Rezepten entfernt"); }
+  else { S.saved.unshift(Object.assign({}, r, {savedAt: Date.now()})); toast("Rezept gespeichert ❤️"); }
+  persist(); render();
+};
+
+function viewSaved(){
+  return header("Rezeptbuch", "Gespeicherte Rezepte", S.saved.length ? `${S.saved.length} Rezept${S.saved.length > 1 ? "e" : ""}` : "") +
+  `<main><div class="section">${S.saved.length ? S.saved.map(r => recipeCard(r, "saved")).join("")
+    : `<div class="empty">Noch nichts gespeichert.<br>Öffne ein Rezept und tippe auf „Rezept speichern“.</div>`}</div></main>`;
+}
+
+function viewSettings(){
+  const s = S.settings;
+  return header("Einstellungen", "Einstellungen", "API-Schlüssel und KI-Modell") +
+  `<main>
+    <div class="section card">
+      <label class="lbl" for="key">Claude API-Schlüssel</label>
+      <div class="add-row" style="margin-top:0">
+        <input class="field" id="key" type="password" value="${esc(s.apiKey)}" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="btn btn-ghost btn-small" onclick="const k=$('#key');k.type=k.type==='password'?'text':'password'">👁</button>
+      </div>
+      <p class="hint">Einen Schlüssel bekommst du unter <a href="https://console.anthropic.com/settings/keys">console.anthropic.com</a>. Er wird nur auf diesem Handy gespeichert.
+        Zum Ausprobieren ohne Schlüssel einfach <b>demo</b> eintragen.</p>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-dark" style="flex:1" onclick="saveKey()">Speichern</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="testKey()" id="testBtn">Verbindung testen</button>
+      </div>
+    </div>
+
+    <div class="section card">
+      <label class="lbl">KI-Modell</label>
+      ${MODELS.map(([id, name, d]) => `<label class="radio"><input type="radio" name="model" ${s.model === id ? "checked" : ""} onchange="S.settings.model='${id}';persist();toast('Modell gespeichert')">
+        <span><b>${name}</b><small>${d}</small></span></label>`).join("")}
+    </div>
+
+    <div class="section card">
+      <label class="lbl">Daten</label>
+      <p class="hint" style="margin-top:0">Gespeicherte Rezepte: ${S.saved.length}</p>
+      <button class="link" onclick="if(confirm('Alle gespeicherten Rezepte löschen?')){S.saved=[];persist();render();}">Gespeicherte Rezepte löschen</button>
+    </div>
+  </main>`;
+}
+window.saveKey = () => { S.settings.apiKey = $("#key").value.trim(); persist(); toast("Gespeichert"); };
+window.testKey = async () => {
+  saveKey();
+  const b = $("#testBtn"); b.textContent = "Teste …"; b.disabled = true;
+  try {
+    if (isDemo()) toast("Demo-Modus aktiv ✓");
+    else {
+      const res = await rawRequest({model: S.settings.model, max_tokens: 10, messages:[{role:"user", content:"Sag nur: ok"}]});
+      if (res.status === 200) toast("Verbindung klappt ✓");
+      else { let m = ""; try { m = JSON.parse(res.text).error.message; } catch(e){} toast("Fehler " + res.status + (m ? ": " + m : "")); }
+    }
+  } finally { b.textContent = "Verbindung testen"; b.disabled = false; }
+};
+
+/* ---------- Rendern ---------- */
+const VIEWS = {scan: viewScan, staples: viewStaples, results: viewResults, detail: viewDetail, saved: viewSaved, settings: viewSettings};
+function render(){
+  $("#app").innerHTML = VIEWS[S.view]();
+  const t = S.tab;
+  $("#tabs").innerHTML = `
+    <button class="${t === "cook" ? "on" : ""}" onclick="tab('scan','cook')"><span class="i">🥕</span>Kochen</button>
+    ${S.recipes.length || S.loading ? `<button class="${t === "ideas" ? "on" : ""}" onclick="tab('results','ideas')"><span class="i">📋</span>Ideen</button>` : ""}
+    <button class="${t === "saved" ? "on" : ""}" onclick="tab('saved','saved')"><span class="i">❤️</span>Gespeichert${S.saved.length ? `<span class="count">${S.saved.length}</span>` : ""}</button>
+    <button class="${t === "settings" ? "on" : ""}" onclick="tab('settings','settings')"><span class="i">⚙️</span>Einstellungen</button>`;
+  if (S.view === "scan"){
+    updateScan();
+    const m = $("#manual"); if (m) m.addEventListener("keydown", e => { if (e.key === "Enter") addManual(); });
+  }
+}
+
+$("#camInput").addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
+$("#galInput").addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
+render();
+</script>
+</body>
+</html>
