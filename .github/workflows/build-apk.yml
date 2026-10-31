@@ -1,1 +1,48 @@
+name: APK bauen
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Java 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: APK bauen
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: APK umbenennen
+        run: cp app/build/outputs/apk/release/app-release.apk Kochideen.apk
+
+      - name: APK als Artefakt speichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kochideen-APK
+          path: Kochideen.apk
+
+      - name: APK als Release veröffentlichen (direkt am Handy ladbar)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Kochideen Version ${{ github.run_number }}
+          body: Lade unten "Kochideen.apk" auf dein Android-Handy herunter und installiere sie.
+          files: Kochideen.apk
+          make_latest: true
 
