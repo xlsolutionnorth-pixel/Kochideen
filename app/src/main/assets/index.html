@@ -213,10 +213,12 @@ const CAT_EMOJI = {gemuese:"🥕",obst:"🍎",fleisch:"🥩",fisch:"🐟",milch:
   huelsenfruechte:"🫘",konserve:"🥫",gewuerz:"🧂",sauce:"🫙",nuss:"🥜",backen:"🧁",getraenk:"🧃",kraeuter:"🌿",sonstiges:"🍽️",basis:"✔️"};
 
 const MODELS = [
-  ["claude-sonnet-5-5","Claude Sonnet 5.5","Empfohlen – gute Erkennung, ausgewogene Kosten"],
-  ["claude-haiku-5-5","Claude Haiku 5.5","Am schnellsten und günstigsten"],
-  ["claude-opus-5-5","Claude Opus 5.5","Beste Qualität, teurer und langsamer"]
+  ["gemini-flash-latest","Google Gemini Flash","Empfohlen – kostenlos, gute Fotoerkennung","gemini"],
+  ["gemini-flash-lite-latest","Google Gemini Flash-Lite","Kostenlos, schneller, mehr Anfragen pro Tag","gemini"],
+  ["claude-sonnet-5-5","Claude Sonnet 5.5","Kostenpflichtig (ca. 1–3 Cent pro Anfrage)","claude"],
+  ["claude-haiku-5-5","Claude Haiku 5.5","Kostenpflichtig, günstiger","claude"]
 ];
+const providerOf = m => (MODELS.find(x => x[0] === m) || MODELS[0])[3];
 
 /* ---------- Zustand ---------- */
 const S = {
@@ -228,7 +230,13 @@ const S = {
   staples: new Set(store.get("staples", [])),
   recipes: store.get("lastRecipes", []),
   saved: store.get("saved", []),
-  settings: Object.assign({apiKey:"", model:"claude-sonnet-5-5", servings:2, count:4, wish:""}, store.get("settings", {})),
+  settings: (() => {
+    const st = Object.assign({model:"gemini-flash-latest", keys:{gemini:"", claude:""}, servings:2, count:4, wish:""}, store.get("settings", {}));
+    st.keys = Object.assign({gemini:"", claude:""}, st.keys || {});
+    if (st.apiKey){ if (st.apiKey.toLowerCase() === "demo") st.keys.gemini = "demo"; else st.keys.claude = st.apiKey; delete st.apiKey; }
+    if (!MODELS.some(x => x[0] === st.model)) st.model = "gemini-flash-latest";
+    return st;
+  })(),
   current: null,
   loading: false,
   error: ""
@@ -259,43 +267,64 @@ window.handleBack = function(){
   return false;
 };
 
-/* ---------- Claude-API ---------- */
+/* ---------- KI-Anbindung (Gemini kostenlos / Claude optional) ---------- */
 const pending = {};
 window.__nativeResp = function(id, status, b64){
   const p = pending[id]; if (!p) return; delete pending[id];
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   p.resolve({status, text: new TextDecoder("utf-8").decode(bytes)});
 };
+const curKey = () => (S.settings.keys[providerOf(S.settings.model)] || "").trim();
 
-async function rawRequest(body){
-  const key = S.settings.apiKey.trim();
-  if (window.Android && window.Android.request){
+async function httpPost(url, headers, body){
+  if (window.Android && window.Android.post){
     const id = uid();
-    return new Promise(resolve => { pending[id] = {resolve}; window.Android.request(id, JSON.stringify(body), key); });
+    return new Promise(resolve => { pending[id] = {resolve}; window.Android.post(id, url, JSON.stringify(headers), JSON.stringify(body)); });
   }
   // Fallback für Test im Browser
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {method:"POST",
-      headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01",
-        "anthropic-dangerous-direct-browser-access":"true"}, body: JSON.stringify(body)});
+    const r = await fetch(url, {method:"POST", headers, body: JSON.stringify(body)});
     return {status: r.status, text: await r.text()};
   } catch(e){ return {status:0, text: JSON.stringify({error:{message:"Keine Verbindung: " + e.message}})}; }
 }
 
-async function askClaude(content, maxTokens){
-  if (!S.settings.apiKey.trim()) throw new Error("Bitte zuerst in den Einstellungen deinen API-Schlüssel eintragen.");
-  const res = await rawRequest({model: S.settings.model, max_tokens: maxTokens, messages:[{role:"user", content}]});
+/* parts: [{image:"<base64 jpeg>"}, {text:"..."}] – liefert den Antworttext */
+async function askAIText(parts, maxTokens){
+  const key = curKey();
+  if (!key) throw new Error("Bitte zuerst in den Einstellungen deinen kostenlosen API-Schlüssel eintragen.");
+  const model = S.settings.model, prov = providerOf(model);
+  let res;
+  if (prov === "gemini"){
+    res = await httpPost(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {"content-type":"application/json", "x-goog-api-key": key},
+      {contents:[{role:"user", parts: parts.map(p => p.image ? {inline_data:{mime_type:"image/jpeg", data:p.image}} : {text:p.text})}],
+       generationConfig:{responseMimeType:"application/json", maxOutputTokens: Math.max(8192, maxTokens * 2), temperature: 0.8}});
+  } else {
+    res = await httpPost("https://api.anthropic.com/v1/messages",
+      {"content-type":"application/json", "x-api-key": key, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true"},
+      {model, max_tokens: maxTokens, messages:[{role:"user", content: parts.map(p => p.image
+        ? {type:"image", source:{type:"base64", media_type:"image/jpeg", data:p.image}} : {type:"text", text:p.text})}]});
+  }
   let data; try { data = JSON.parse(res.text); } catch(e){ data = null; }
   if (res.status !== 200){
     const msg = data && data.error && data.error.message ? data.error.message : ("Fehler " + res.status);
-    if (res.status === 401) throw new Error("API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.");
-    if (res.status === 429) throw new Error("Zu viele Anfragen – bitte kurz warten. (" + msg + ")");
-    if (res.status === 529) throw new Error("Der Dienst ist gerade überlastet. Bitte gleich nochmal versuchen.");
+    if (res.status === 401 || res.status === 403 || /api key not valid|API_KEY_INVALID/i.test(msg))
+      throw new Error("API-Schlüssel ungültig. Bitte in den Einstellungen prüfen.");
+    if (res.status === 429) throw new Error(prov === "gemini"
+      ? "Kostenloses Kontingent gerade aufgebraucht. Bitte eine Minute warten (oder morgen wieder) bzw. in den Einstellungen „Flash-Lite“ wählen."
+      : "Zu viele Anfragen – bitte kurz warten.");
+    if (res.status === 503 || res.status === 529) throw new Error("Der Dienst ist gerade überlastet. Bitte gleich nochmal versuchen.");
     throw new Error(msg);
   }
-  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-  return parseJSON(text);
+  if (prov === "gemini"){
+    const c = data.candidates && data.candidates[0];
+    const text = c && c.content && c.content.parts ? c.content.parts.filter(p => !p.thought && p.text).map(p => p.text).join("") : "";
+    if (!text) throw new Error(c && c.finishReason === "MAX_TOKENS" ? "Antwort war zu lang – bitte weniger Ideen wählen." : "Keine Antwort erhalten. Bitte nochmal versuchen.");
+    return text;
+  }
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
 }
+const askAI = async (parts, maxTokens) => parseJSON(await askAIText(parts, maxTokens));
 
 function parseJSON(text){
   let t = text.replace(/```json|```/g, "");
@@ -305,7 +334,7 @@ function parseJSON(text){
   catch(e){ throw new Error("Antwort konnte nicht gelesen werden. Bitte nochmal versuchen."); }
 }
 
-const isDemo = () => S.settings.apiKey.trim().toLowerCase() === "demo";
+const isDemo = () => curKey().toLowerCase() === "demo";
 
 /* ---------- Fotos ---------- */
 function resizeImage(file, max){
@@ -348,10 +377,7 @@ async function detectIngredients(dataUrl){
     return pool.sort(() => Math.random() - .5).slice(0, 4).map(([name, kategorie]) => ({name, kategorie}));
   }
   const data = dataUrl.split(",")[1];
-  const r = await askClaude([
-    {type:"image", source:{type:"base64", media_type:"image/jpeg", data}},
-    {type:"text", text: DETECT_PROMPT}
-  ], 1500);
+  const r = await askAI([{image: data}, {text: DETECT_PROMPT}], 2000);
   return Array.isArray(r.zutaten) ? r.zutaten.filter(z => z && z.name) : [];
 }
 
@@ -410,7 +436,7 @@ function viewScan(){
       </div>
       <p class="hint">Fehlt etwas oder wurde falsch erkannt? Einfach antippen zum Entfernen oder selbst ergänzen.</p>
     </div>
-    ${!S.settings.apiKey ? `<div class="notice">🔑 Für die Fotoerkennung brauchst du einen API-Schlüssel. <button class="link" onclick="tab('settings')">Jetzt eintragen</button></div>` : ""}
+    ${!curKey() ? `<div class="notice">🔑 Für die Fotoerkennung brauchst du einen kostenlosen Schlüssel (einmalig, 2 Minuten). <button class="link" onclick="tab('settings')">Jetzt eintragen</button></div>` : ""}
   </main>
   <div class="actionbar"><div class="inner">
     <button class="btn btn-primary" id="finishBtn" onclick="finishScan()">Einlesen beenden →</button>
@@ -569,7 +595,7 @@ window.generate = async function(more){
     let list;
     if (isDemo()){ await new Promise(r => setTimeout(r, 1800)); list = demoRecipes(); }
     else {
-      const r = await askClaude(recipePrompt(more), Math.min(16000, 1800 * S.settings.count + 1500));
+      const r = await askAI([{text: recipePrompt(more)}], Math.min(16000, 1800 * S.settings.count + 1500));
       list = Array.isArray(r.rezepte) ? r.rezepte : [];
     }
     list.forEach(x => x.id = uid());
@@ -704,27 +730,40 @@ function viewSaved(){
 }
 
 function viewSettings(){
-  const s = S.settings;
-  return header("Einstellungen", "Einstellungen", "API-Schlüssel und KI-Modell") +
-  `<main>
-    <div class="section card">
-      <label class="lbl" for="key">Claude API-Schlüssel</label>
+  const s = S.settings, prov = providerOf(s.model);
+  const keyBox = prov === "gemini" ? `
+      <label class="lbl" for="key">Google Gemini API-Schlüssel <span class="tag gewuerz">kostenlos</span></label>
       <div class="add-row" style="margin-top:0">
-        <input class="field" id="key" type="password" value="${esc(s.apiKey)}" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <input class="field" id="key" type="password" value="${esc(s.keys.gemini)}" placeholder="AIza…" autocomplete="off" autocapitalize="off" spellcheck="false">
         <button class="btn btn-ghost btn-small" onclick="const k=$('#key');k.type=k.type==='password'?'text':'password'">👁</button>
       </div>
-      <p class="hint">Einen Schlüssel bekommst du unter <a href="https://console.anthropic.com/settings/keys">console.anthropic.com</a>. Er wird nur auf diesem Handy gespeichert.
-        Zum Ausprobieren ohne Schlüssel einfach <b>demo</b> eintragen.</p>
+      <ol class="hint" style="padding-left:18px;margin:10px 0 0">
+        <li>Öffne <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a> und melde dich mit deinem Google-Konto an.</li>
+        <li>Tippe auf <b>„API-Schlüssel erstellen“</b> (keine Kreditkarte nötig).</li>
+        <li>Schlüssel kopieren und hier einfügen.</li>
+      </ol>
+      <p class="hint">Der Schlüssel wird nur auf diesem Handy gespeichert. Zum Ausprobieren ohne Schlüssel einfach <b>demo</b> eintragen.</p>`
+    : `
+      <label class="lbl" for="key">Claude API-Schlüssel <span class="tag fehlt">kostenpflichtig</span></label>
+      <div class="add-row" style="margin-top:0">
+        <input class="field" id="key" type="password" value="${esc(s.keys.claude)}" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="btn btn-ghost btn-small" onclick="const k=$('#key');k.type=k.type==='password'?'text':'password'">👁</button>
+      </div>
+      <p class="hint">Schlüssel unter <a href="https://console.anthropic.com/settings/keys">console.anthropic.com</a> (Guthaben nötig).</p>`;
+  return header("Einstellungen", "Einstellungen", "KI-Dienst und Schlüssel") +
+  `<main>
+    <div class="section card">
+      <label class="lbl">KI-Modell</label>
+      ${MODELS.map(([id, name, d]) => `<label class="radio"><input type="radio" name="model" ${s.model === id ? "checked" : ""} onchange="setModel('${id}')">
+        <span><b>${name}</b><small>${d}</small></span></label>`).join("")}
+    </div>
+
+    <div class="section card">
+      ${keyBox}
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn btn-dark" style="flex:1" onclick="saveKey()">Speichern</button>
         <button class="btn btn-ghost" style="flex:1" onclick="testKey()" id="testBtn">Verbindung testen</button>
       </div>
-    </div>
-
-    <div class="section card">
-      <label class="lbl">KI-Modell</label>
-      ${MODELS.map(([id, name, d]) => `<label class="radio"><input type="radio" name="model" ${s.model === id ? "checked" : ""} onchange="S.settings.model='${id}';persist();toast('Modell gespeichert')">
-        <span><b>${name}</b><small>${d}</small></span></label>`).join("")}
     </div>
 
     <div class="section card">
@@ -734,18 +773,19 @@ function viewSettings(){
     </div>
   </main>`;
 }
-window.saveKey = () => { S.settings.apiKey = $("#key").value.trim(); persist(); toast("Gespeichert"); };
+window.setModel = id => { S.settings.model = id; persist(); render(); toast("Modell gespeichert"); };
+window.saveKey = () => { S.settings.keys[providerOf(S.settings.model)] = $("#key").value.trim(); persist(); toast("Gespeichert"); };
 window.testKey = async () => {
   saveKey();
   const b = $("#testBtn"); b.textContent = "Teste …"; b.disabled = true;
   try {
     if (isDemo()) toast("Demo-Modus aktiv ✓");
     else {
-      const res = await rawRequest({model: S.settings.model, max_tokens: 10, messages:[{role:"user", content:"Sag nur: ok"}]});
-      if (res.status === 200) toast("Verbindung klappt ✓");
-      else { let m = ""; try { m = JSON.parse(res.text).error.message; } catch(e){} toast("Fehler " + res.status + (m ? ": " + m : "")); }
+      const r = await askAI([{text:'Antworte nur mit diesem JSON: {"ok":true}'}], 50);
+      toast(r && r.ok ? "Verbindung klappt ✓" : "Antwort erhalten ✓");
     }
-  } finally { b.textContent = "Verbindung testen"; b.disabled = false; }
+  } catch(e){ toast(e.message); }
+  finally { b.textContent = "Verbindung testen"; b.disabled = false; }
 };
 
 /* ---------- Rendern ---------- */

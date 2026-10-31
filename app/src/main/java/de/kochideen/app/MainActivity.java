@@ -27,18 +27,18 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 
 /**
  * Die Oberfläche der App liegt in assets/index.html (HTML/JS).
  * Diese Activity stellt bereit:
  *  - Kamera und Galerie für Fotos (über den Dateiauswahl-Dialog der WebView)
- *  - eine Brücke "Android.request(...)", die die Claude-API nativ aufruft
+ *  - eine Brücke "Android.post(...)", die die KI-Dienste (Gemini / Claude) nativ aufruft
  */
 public class MainActivity extends Activity {
 
     private static final int REQ_CAMERA = 101;
     private static final int REQ_GALLERY = 102;
-    private static final String API_URL = "https://api.anthropic.com/v1/messages";
 
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
@@ -183,21 +183,29 @@ public class MainActivity extends Activity {
     /** Wird aus JavaScript als window.Android aufgerufen. */
     private class Bridge {
 
+        /** Allgemeiner HTTPS-POST (für Gemini und Claude). headersJson = {"name":"wert",...} */
         @JavascriptInterface
-        public void request(final String id, final String body, final String apiKey) {
+        public void post(final String id, final String url, final String headersJson, final String body) {
             new Thread(() -> {
                 int code;
                 String text;
                 HttpURLConnection c = null;
                 try {
-                    c = (HttpURLConnection) new URL(API_URL).openConnection();
+                    if (!url.startsWith("https://generativelanguage.googleapis.com/")
+                            && !url.startsWith("https://api.anthropic.com/")) {
+                        throw new Exception("Adresse nicht erlaubt");
+                    }
+                    c = (HttpURLConnection) new URL(url).openConnection();
                     c.setRequestMethod("POST");
                     c.setDoOutput(true);
                     c.setConnectTimeout(30000);
                     c.setReadTimeout(300000);
-                    c.setRequestProperty("content-type", "application/json");
-                    c.setRequestProperty("x-api-key", apiKey);
-                    c.setRequestProperty("anthropic-version", "2023-06-01");
+                    JSONObject h = new JSONObject(headersJson);
+                    Iterator<String> keys = h.keys();
+                    while (keys.hasNext()) {
+                        String k = keys.next();
+                        c.setRequestProperty(k, h.getString(k));
+                    }
                     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                     c.setFixedLengthStreamingMode(bytes.length);
                     try (OutputStream os = c.getOutputStream()) {
